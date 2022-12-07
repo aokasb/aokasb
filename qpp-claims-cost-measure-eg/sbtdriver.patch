@@ -1,0 +1,35 @@
+Index: build.sbt
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/build.sbt b/build.sbt
+--- a/build.sbt	(revision 39d6a5f1dde7b6a64cceaf663054e064c9f35297)
++++ b/build.sbt	(date 1659448815611)
+@@ -136,7 +136,18 @@
+       _.exclude("org", "log4j")
+         .exclude("org.slf4j", "slf4j-log4j12")
+         .exclude("net.jpountz.lz4", "lz4")
+-    )
++    ),
++    assembly / assemblyJarName := "driver.jar",
++    assembly / assemblyMergeStrategy := {
++      case m if m.toLowerCase.endsWith("manifest.mf") => MergeStrategy.discard
++      case m if m.toLowerCase.matches("meta-inf.*\\.sf$") =>
++        MergeStrategy.discard
++      case "log4j.properties" => MergeStrategy.discard
++      case m if m.toLowerCase.startsWith("meta-inf/services/") =>
++        MergeStrategy.filterDistinctLines
++      case "reference.conf" => MergeStrategy.concat
++      case _                => MergeStrategy.first
++    }
+   )
+ 
+ lazy val egBeneReports = (project in file("projects/egBeneReports"))
+@@ -185,4 +196,4 @@
+       }
+     ),
+     buildInfoPackage := "gov.cms.qpp.eg_bene_reports"
+-  )
+\ No newline at end of file
++  )

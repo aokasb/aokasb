@@ -1,0 +1,54 @@
+Index: projects/egvnv/src/test/scala/gov/cms/qpp/egvnv/steps/event_finder/ChronicTotalAttributionWindowVnVTest.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/egvnv/src/test/scala/gov/cms/qpp/egvnv/steps/event_finder/ChronicTotalAttributionWindowVnVTest.scala b/projects/egvnv/src/test/scala/gov/cms/qpp/egvnv/steps/event_finder/ChronicTotalAttributionWindowVnVTest.scala
+--- a/projects/egvnv/src/test/scala/gov/cms/qpp/egvnv/steps/event_finder/ChronicTotalAttributionWindowVnVTest.scala	(revision c2560264e4e141ba7b2fd6f90fdde989e1141293)
++++ b/projects/egvnv/src/test/scala/gov/cms/qpp/egvnv/steps/event_finder/ChronicTotalAttributionWindowVnVTest.scala	(date 1669648340908)
+@@ -7,12 +7,17 @@
+ import org.apache.spark.sql.functions.col
+ import org.apache.spark.sql.types.BooleanType
+ import org.apache.spark.sql.{Dataset, Encoder}
+-import org.log4s.getLogger
+ 
+ import java.time.Year
+ 
+-class ChronicTotalAttributionWindowVnVTest extends DirectoryDataTestWrapper {
++class ChronicTotalAttributionWindowVnVTest
++    extends DirectoryDataTestWrapper
++    with StepVnV {
+ 
++  final val ID: String = "ChronicTotalAttributionWindowVnV"
++  final val ORDINAL: Double = 1.02
++
++  /*
+   def validateResults[A](ds: Dataset[A]): Long = {
+ 
+     // Get list of boolean column names.
+@@ -29,9 +34,7 @@
+     }
+     counts.map(x => x._2).sum
+   }
+-  // Could not extend due to logger conflict
+-  // override val logger =
+-  // getLogger(classOf[ChronicTotalAttributionWindowVnVTest])
++   */
+ 
+   val testCasesDir = "/test-data/steps/total-attribution-window"
+   import spark.implicits._
+@@ -41,14 +44,6 @@
+     workbooks = workbooks2019
+   )
+ 
+-  // Running all tests together is faster, but it
+-  // can be helpful for debugging to run tests separately
+-  // testCases.foreach { testCase =>
+-  //   test(s"EpisodeFinderVnV should handle $testCase") {
+-  //     runForTestCases(Seq(testCase))
+-  //   }
+-  // }
+-
+   test(s"All test cases pass: ${testCases.mkString(", ")}") {
+     runForTestCases(testCases)
+   }

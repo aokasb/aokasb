@@ -1,0 +1,70 @@
+Index: projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_finder/ChronicEpisodeFinder.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_finder/ChronicEpisodeFinder.scala b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_finder/ChronicEpisodeFinder.scala
+new file mode 100644
+--- /dev/null	(date 1659019552118)
++++ b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_finder/ChronicEpisodeFinder.scala	(date 1659019552118)
+@@ -0,0 +1,60 @@
++package gov.cms.qpp.eg.steps.episode_finder
++
++import gov.cms.qpp.eg.models.{Event, EventType, QPPDateType}
++import gov.cms.qpp.egworkbooks.outputs.models.ChronicEpisodeWindow
++import gov.cms.qpp.sparkutils.Implicits._
++import org.apache.spark.sql.functions._
++import org.apache.spark.sql.{Column, DataFrame, Dataset, SparkSession}
++
++class ChronicEpisodeFinder(
++    events: Dataset[Event],
++    cew: Dataset[ChronicEpisodeWindow]
++)(
++    implicit spark: SparkSession
++) {
++  // Step 1
++  val pbEvent = "pbEvent"
++  val pbEvents: Dataset[Event] = events
++    .where(col("eventType") === EventType.PB)
++    .alias(pbEvent)
++
++  // Step 2
++
++
++  val STAY_ADMSN_DT = events("dates").elementAt(QPPDateType.STAY_ADMSN_DT)
++  val STAY_DSCHRGDT = events("dates").elementAt(QPPDateType.STAY_DSCHRGDT)
++  val TRIGGER_DATE = events("dates").elementAt(rules("casDateField"))
++
++  val drgCodesOverlap = arrays_overlap(events("codes"), rules("drgCodes"))
++
++  val epEndDate: Column = greatest(
++    STAY_ADMSN_DT.addDays(rules("episodeEndPostTrigger")),
++    STAY_ADMSN_DT.addDays(rules("episodeEndAfterSurgery")),
++    STAY_DSCHRGDT.addDays(rules("episodeEndAfterDischarge"))
++  )
++
++  val casEndDate: Column = greatest(
++    STAY_ADMSN_DT.addDays(rules("casEndPostTrigger")),
++    STAY_ADMSN_DT.addDays(rules("casEndAfterSurgery")),
++    STAY_DSCHRGDT.addDays(rules("casEndAfterDischarge"))
++  )
++
++  val episodes: DataFrame = rules
++    .join(events, drgCodesOverlap)
++    .select(
++      events("beneIdentifier"),
++      rules("episodeGroupId"),
++      events("eventId").as("triggerEventId"),
++      events("eventId").as("ipStayEventId"),
++      lit(false).as("isIpProcedureEpisode"),
++      TRIGGER_DATE.as("triggerDate"),
++      TRIGGER_DATE
++        .subtractDays(rules("episodeStartPreTrigger"))
++        .as("epStartDate"),
++      epEndDate.as("epEndDate"),
++      TRIGGER_DATE.subtractDays(rules("casStartPreTrigger")).as("casStartDate"),
++      casEndDate.as("casEndDate"),
++      events("dates").elementAt(rules("casDateField")).as("casDate"),
++      typedLit[Option[Int]](None).as("lateralityWindow")
++    )
++}

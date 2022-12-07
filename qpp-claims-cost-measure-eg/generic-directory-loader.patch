@@ -1,0 +1,92 @@
+Index: projects/eg/src/test/scala/gov/cms/qpp/eg/DirectoryDataTestWrapper.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/eg/src/test/scala/gov/cms/qpp/eg/DirectoryDataTestWrapper.scala b/projects/eg/src/test/scala/gov/cms/qpp/eg/DirectoryDataTestWrapper.scala
+--- a/projects/eg/src/test/scala/gov/cms/qpp/eg/DirectoryDataTestWrapper.scala	(revision 3a6095d62a12b4350d98c59d77b189e06bc67e75)
++++ b/projects/eg/src/test/scala/gov/cms/qpp/eg/DirectoryDataTestWrapper.scala	(date 1670430217220)
+@@ -1,10 +1,11 @@
+ package gov.cms.qpp.eg
+ 
+ import java.io.File
+-
+ import gov.cms.qpp.eg.models.{BeneEsrdDateRange, Episode, Event}
+ import org.apache.spark.sql.{DataFrameReader, Dataset, Encoder}
+ 
++import scala.reflect.runtime.universe._
++
+ trait DirectoryDataTestWrapper extends TestWrapper {
+   val testCasesDir: String
+ 
+@@ -38,6 +39,39 @@
+     loadEpisodes(paths)
+   }
+ 
++  def loadTestDataset[T: TypeTag: Encoder](
++      directories: Seq[String],
++      prefix: String = "",
++      method: String = "json"
++  ): Dataset[T] = {
++    def camelToDashes(name: String) = {
++      "[A-Z\\d]".r
++        .replaceAllIn(name, { m =>
++          "-" + m.group(0).toLowerCase()
++        })
++        .stripPrefix("-")
++
++    }
++    val name = camelToDashes(typeOf[T].toString.split('.').last)
++    val filename: String =
++      if (prefix.isEmpty) name + "." + method
++      else prefix + "-" + name + "." + method
++    val paths = directories.map(_ + "/" + filename)
++    loadTestCases[T](paths, method)
++  }
++
++  import spark.implicits._
++  private def loadTestCases[T: TypeTag: Encoder](
++      paths: Seq[String],
++      method: String
++  ): Dataset[T] = {
++    reader
++      .schema(implicitly[Encoder[T]].schema)
++      .format(method)
++      .load(paths: _*)
++      .as[T]
++  }
++
+   def loadEpisodesSeq(
+       directories: Seq[String],
+       filename: String = "output-episodes.json"
+Index: projects/eg/src/test/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyAutoGroupingRuleTest.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/eg/src/test/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyAutoGroupingRuleTest.scala b/projects/eg/src/test/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyAutoGroupingRuleTest.scala
+--- a/projects/eg/src/test/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyAutoGroupingRuleTest.scala	(revision 3a6095d62a12b4350d98c59d77b189e06bc67e75)
++++ b/projects/eg/src/test/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyAutoGroupingRuleTest.scala	(date 1670427738533)
+@@ -4,6 +4,7 @@
+ import gov.cms.qpp.eg.models.{
+   Code,
+   CodeType,
++  Episode,
+   EpisodeDefaults,
+   EventDefaults,
+   LinkKey,
+@@ -48,7 +49,10 @@
+ 
+     lazy implicit val implicitWorkbooks: Workbooks = workbooks2019
+ 
+-    val expected = loadEpisodesSeq(basePaths)
++    import spark.implicits._
++    val expected = loadTestDataset[Episode](basePaths, "output")
++      .collect()
++      .sortBy(_.episodeId)
+ 
+     val actual =
+       ApplyAutoGroupingRule
+diff --git a/projects/eg/src/test/resources/test-data/steps/cost-assignment/AutoGroupingRules/01-AkiTrig/output-episodes.json b/projects/eg/src/test/resources/test-data/steps/cost-assignment/AutoGroupingRules/01-AkiTrig/output-episode.json
+rename from projects/eg/src/test/resources/test-data/steps/cost-assignment/AutoGroupingRules/01-AkiTrig/output-episodes.json
+rename to projects/eg/src/test/resources/test-data/steps/cost-assignment/AutoGroupingRules/01-AkiTrig/output-episode.json

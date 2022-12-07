@@ -1,0 +1,78 @@
+Index: projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/ChronicTotalAttributionWindow.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/ChronicTotalAttributionWindow.scala b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/ChronicTotalAttributionWindow.scala
+--- a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/ChronicTotalAttributionWindow.scala	(revision d1a1c05caebea4463837b4b7f0edab65913fc39a)
++++ b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/ChronicTotalAttributionWindow.scala	(date 1661552800634)
+@@ -75,6 +75,9 @@
+       candEvents.preEpisodeEndDt.isEmpty || validNewPotentialTriggerClaim
+     val isPotentialTriggerClaim = validDateForPotentialTriggerClaim && validEmHcpcsForPotentialTriggerClaim
+ 
++    val isPotentialSeconaryTriggerClaim =
++      validDateForPotentialTriggerClaim && chronicEvent.isSeconaryClaim
++
+     // Identifies if this one is a confirm claim
+     val validGapForConfirmTriggerClaim =
+       candEvents.prePotentialTriggerDay.isDefined && candEvents.prePotentialTriggerDay.get &&
+@@ -115,6 +118,7 @@
+       sameDayReaffirmClaim,
+       isConfirmClaim,
+       isPotentialTriggerClaim,
++      isPotentialSeconaryTriggerClaim,
+       candEvents.preEpisodeStartDt,
+       candEvents.preExpnsdt1,
+       expnsdt1
+@@ -174,7 +178,7 @@
+       // Base event
+       chronicEvent = chronicEvent
+     )
+-    val isClaimOfInterest = isReaffirmClaim || isPotentialTriggerClaim || isConfirmClaim
++    val isClaimOfInterest = isReaffirmClaim || isPotentialTriggerClaim || isConfirmClaim || isPotentialSeconaryTriggerClaim
+     val candidateEventWithPre =
+       if (isClaimOfInterest) {
+         // Event qualifies - update all dates
+Index: projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/ImplicitModels.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/ImplicitModels.scala b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/ImplicitModels.scala
+--- a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/ImplicitModels.scala	(revision d1a1c05caebea4463837b4b7f0edab65913fc39a)
++++ b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/ImplicitModels.scala	(date 1661552475973)
+@@ -5,6 +5,9 @@
+     val isPrimaryClaim =
+       if (ceg.emFlag || ceg.primaryHcpcsFlag) true else false
+ 
++    val isSeconaryClaim =
++      if (ceg.secondaryHcpcsFlag && !isPrimaryClaim) true else false
++
+     val expnsdt1 = ceg.dates.get("expnsdt1").get
+   }
+ }
+Index: projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/Utils.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/Utils.scala b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/Utils.scala
+--- a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/Utils.scala	(revision d1a1c05caebea4463837b4b7f0edab65913fc39a)
++++ b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/event_finder/Utils.scala	(date 1661552855556)
+@@ -53,6 +53,7 @@
+       sameDayReaffirmClaim: Boolean,
+       confirmClaim: Boolean,
+       isPotentialTriggerClaim: Boolean,
++      isPotentialSeconaryTriggerClaim: Boolean,
+       preEpisodeStartDt: Option[Date],
+       preExpnsdt1: Option[Date],
+       expnsdt1: Date
+@@ -61,7 +62,7 @@
+       preEpisodeStartDt
+     } else if (confirmClaim) {
+       preExpnsdt1
+-    } else if (isPotentialTriggerClaim) {
++    } else if (isPotentialTriggerClaim || isPotentialSeconaryTriggerClaim) {
+       // Added to join potential triggers
+       Some(expnsdt1)
+     } else {
