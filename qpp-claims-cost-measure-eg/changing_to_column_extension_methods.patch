@@ -1,0 +1,178 @@
+Index: projects/eg/src/main/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyIrfLtchCapping.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyIrfLtchCapping.scala b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyIrfLtchCapping.scala
+--- a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyIrfLtchCapping.scala	(revision f1523e70b91a07be39470460db86f423b4576700)
++++ b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyIrfLtchCapping.scala	(date 1670874674568)
+@@ -6,6 +6,7 @@
+ import gov.cms.qpp.egworkbooks.outputs.Workbooks
+ import gov.cms.qpp.egworkbooks.outputs.models.GroupingRule
+ import gov.cms.qpp.sparkutils.Implicits.AugmentedDataSet
++import gov.cms.qpp.sparkutils.Implicits.AugmentedColumn
+ import gov.cms.qpp.sparkutils.SparkJoinTypes.JOIN_TYPE_LEFT
+ import org.apache.spark.sql.functions._
+ import org.apache.spark.sql.types.StringType
+@@ -134,7 +135,7 @@
+     import spark.implicits._
+ 
+     val isChronic =
+-      lower(episodeEventWithIrfLtch("episodeGroupId")).startsWith("c")
++      episodeEventWithIrfLtch("episodeGroupId").isChronicEg
+ 
+     episodeEventWithIrfLtch
+       .where(isChronic)
+Index: projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_flagger/Tier0EpisodeFlagsTable.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_flagger/Tier0EpisodeFlagsTable.scala b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_flagger/Tier0EpisodeFlagsTable.scala
+--- a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_flagger/Tier0EpisodeFlagsTable.scala	(revision f1523e70b91a07be39470460db86f423b4576700)
++++ b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_flagger/Tier0EpisodeFlagsTable.scala	(date 1670874610103)
+@@ -173,7 +173,7 @@
+       episode.beneIdentifier
+     )
+ 
+-  val isChronicEg = lower($"episodeGroupId").startsWith("c")
++  val isChronicEg = col("episodeGroupId").isChronicEg
+ 
+   val aggregated = grouped
+     .agg(
+Index: projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_finder/ChronicEpisodeFinder.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_finder/ChronicEpisodeFinder.scala b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_finder/ChronicEpisodeFinder.scala
+--- a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_finder/ChronicEpisodeFinder.scala	(revision f1523e70b91a07be39470460db86f423b4576700)
++++ b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_finder/ChronicEpisodeFinder.scala	(date 1670875148970)
+@@ -15,6 +15,7 @@
+   LongestTotalAttrWindow
+ }
+ import gov.cms.qpp.sparkutils.Implicits.AugmentedDataSet
++import gov.cms.qpp.sparkutils.Implicits.AugmentedColumn
+ import gov.cms.qpp.sparkutils.SparkJoinTypes.JOIN_TYPE_LEFT
+ import org.apache.spark.sql.functions._
+ import org.apache.spark.sql.types.StringType
+@@ -229,7 +230,7 @@
+   val reaffirmLookForwardDaysMinus1 = col("reaffirmLookForwardDays") - 1
+ 
+   //EG Type "T"  will not apply to PY22 but the logic is in SAS for future measures, so retaining it.
+-  val isTherapyEpisode = upper(col("episodeGroupId")).startsWith("T")
++  val isTherapyEpisode = col("episodeGroupId").isTheoryEg
+   val egTypeTPerfStartDtToEpEndDtAtLeastRLFD =
+     (chronicPerfDates: PerfDates) =>
+       isTherapyEpisode &&
+@@ -357,7 +358,7 @@
+       col("epEndDate") > chronicPerfDates.chronicPerfEndDate
+ 
+     //EG Type "T"  will not apply to PY22 but the logic is in SAS for future measures, so retaining it.
+-    val isTherapyEpisode = upper(col("episodeGroupId")).startsWith("T")
++    val isTherapyEpisode = col("episodeGroupId").isTheoryEg
+     val epEgTypeTWithDatesCond = isTherapyEpisode &&
+       col("epStartDate") >= chronicPerfDates.chronicPerfStartDate &&
+       datediff(lit(chronicPerfDates.chronicPerfEndDate), col("epEndDate")) >=
+Index: projects/egworkbooks/src/main/scala/gov/cms/qpp/egworkbooks/outputs/models/RiskAdjustmentVariable.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/egworkbooks/src/main/scala/gov/cms/qpp/egworkbooks/outputs/models/RiskAdjustmentVariable.scala b/projects/egworkbooks/src/main/scala/gov/cms/qpp/egworkbooks/outputs/models/RiskAdjustmentVariable.scala
+--- a/projects/egworkbooks/src/main/scala/gov/cms/qpp/egworkbooks/outputs/models/RiskAdjustmentVariable.scala	(revision f1523e70b91a07be39470460db86f423b4576700)
++++ b/projects/egworkbooks/src/main/scala/gov/cms/qpp/egworkbooks/outputs/models/RiskAdjustmentVariable.scala	(date 1670874556553)
+@@ -8,7 +8,7 @@
+ }
+ import org.apache.spark.sql.types.IntegerType
+ import org.apache.spark.sql.{Column, Dataset, SparkSession}
+-
++import gov.cms.qpp.sparkutils.Implicits.AugmentedColumn
+ case class RiskAdjustmentVariable(
+     episodeGroupId: String,
+     varName: String,
+@@ -29,7 +29,7 @@
+     val episodeGroupId: Column = ds("episodeGroupId")
+     val varName: Column = ds("varName")
+     val varType: Column = ds("varType")
+-    val isChronic: Column = upper(episodeGroupId).startsWith("C")
++    val isChronic: Column = episodeGroupId.isChronicEg
+     val isByVarType: Column = lower(varType) === BY_VAR_TYPE
+ 
+     lazy val chronic = ds.where(isChronic)
+Index: projects/egvnv/src/main/scala/gov/cms/qpp/egvnv/steps/episode_finder/ChronicEpisodeFinderVnV.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/egvnv/src/main/scala/gov/cms/qpp/egvnv/steps/episode_finder/ChronicEpisodeFinderVnV.scala b/projects/egvnv/src/main/scala/gov/cms/qpp/egvnv/steps/episode_finder/ChronicEpisodeFinderVnV.scala
+--- a/projects/egvnv/src/main/scala/gov/cms/qpp/egvnv/steps/episode_finder/ChronicEpisodeFinderVnV.scala	(revision f1523e70b91a07be39470460db86f423b4576700)
++++ b/projects/egvnv/src/main/scala/gov/cms/qpp/egvnv/steps/episode_finder/ChronicEpisodeFinderVnV.scala	(date 1670875185999)
+@@ -1,25 +1,24 @@
+ package gov.cms.qpp.egvnv.steps.episode_finder
+ 
+-import gov.cms.qpp.eg.steps.episode_finder.CandidateEventEpisodeCrosswalk.Implicits.CandidateEventEpisodeCrosswalkExtension
+-import gov.cms.qpp.eg.steps.episode_finder.ChronicEpisodeRaw.Implicits.ChronicEpisodeRawExtension
+ import gov.cms.qpp.eg.steps.episode_finder.{
+   CandidateEventEpisodeCrosswalk,
+   ChronicEpisodeRaw,
+   ChronicEpisodeTypeCode,
+   InitChronicEpisode
+ }
++import gov.cms.qpp.eg.steps.episode_finder.CandidateEventEpisodeCrosswalk.Implicits.CandidateEventEpisodeCrosswalkExtension
++import gov.cms.qpp.eg.steps.episode_finder.ChronicEpisodeRaw.Implicits.ChronicEpisodeRawExtension
++import gov.cms.qpp.eg.steps.episode_finder.InitChronicEpisode.Implicits.InitChronicEpisodeExtension
+ import gov.cms.qpp.eg.steps.event_finder.{
+   CandidateEvent,
+   EventLabelCode,
+   LongestTotalAttrWindow
+ }
+-import gov.cms.qpp.eg.steps.episode_finder.InitChronicEpisode.Implicits.InitChronicEpisodeExtension
+ import gov.cms.qpp.eg.steps.event_finder.LongestTotalAttrWindow.Implicits.LongestTotalAttrWindowExtension
+-import gov.cms.qpp.egvnv.steps.common.StepVnV
+-import org.apache.spark.sql.{Column, DataFrame, Dataset, SparkSession}
+-import gov.cms.qpp.egvnv.steps.common.ChronicEpisodeFinderVnVMetrics
+-import gov.cms.qpp.sparkutils.Implicits.AugmentedDataSet
++import gov.cms.qpp.egvnv.steps.common.{ChronicEpisodeFinderVnVMetrics, StepVnV}
++import gov.cms.qpp.sparkutils.Implicits.{AugmentedDataSet, AugmentedColumn}
+ import gov.cms.qpp.sparkutils.SparkJoinTypes._
++import org.apache.spark.sql.{Column, DataFrame, Dataset, SparkSession}
+ import org.apache.spark.sql.expressions.Window
+ import org.apache.spark.sql.functions._
+ import org.apache.spark.sql.types.IntegerType
+@@ -298,7 +297,7 @@
+     * (PY23 and beyond) Determines whether a given episodeGroupId is a Therapy EG type
+     */
+   def getIsTherapyEpisode(episodeGroupId: Column): Column = {
+-    upper(episodeGroupId).startsWith("T")
++    episodeGroupId.isTheoryEg
+   }
+ 
+   /**
+Index: projects/egvnv/src/main/scala/gov/cms/qpp/egvnv/steps/cost_assignment/CostAssignmentVnV.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/egvnv/src/main/scala/gov/cms/qpp/egvnv/steps/cost_assignment/CostAssignmentVnV.scala b/projects/egvnv/src/main/scala/gov/cms/qpp/egvnv/steps/cost_assignment/CostAssignmentVnV.scala
+--- a/projects/egvnv/src/main/scala/gov/cms/qpp/egvnv/steps/cost_assignment/CostAssignmentVnV.scala	(revision f1523e70b91a07be39470460db86f423b4576700)
++++ b/projects/egvnv/src/main/scala/gov/cms/qpp/egvnv/steps/cost_assignment/CostAssignmentVnV.scala	(date 1670874404931)
+@@ -117,7 +117,7 @@
+       */
+     def flagAutoTrigCodeProcDay: Column = {
+       not(
+-        costAssigner.episodeGroupId.startsWith("P") &&
++        costAssigner.episodeGroupId.isProcedureEg &&
+           costAssigner.episodeGroupId =!= "P0066" &&
+           array_contains(lit(Array("pb", "opl")), costAssignedEvents.eventType) &&
+           element_at(costAssignedEvents.dates, "service_date") === costAssigner.triggerDate &&
+@@ -155,8 +155,7 @@
+       not(
+         array_contains(lit(Array("pb", "dm")), costAssignedEvents.eventType) &&
+           costAssignedEvents.isEr === false &&
+-          (costAssigner.episodeGroupId
+-            .startsWith("A") || costAssigner.ipStayEventId.isNotNull) &&
++          (costAssigner.episodeGroupId.isAcuteEg || costAssigner.ipStayEventId.isNotNull) &&
+           not(costAssigner.episodeGroupId.isin("P0007", "P0066")) &&
+           not(
+             arrays_overlap(
