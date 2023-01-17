@@ -1,0 +1,42 @@
+#!/bin/bash
+# copies the binary if argument 2 is supplied then creates a tunnel
+# Auto increments port if it is busy
+set +x
+PREFIX="10.133.154."
+BOOTSTRAP="2HPZYJ9AA"
+echo "removing key" 
+ssh-keygen -R $PREFIX$1
+if [ "$#" -eq 2 ]
+	then
+	ssh hadoop@$PREFIX$1 "mkdir -p /tmp/jars/; rm /tmp/jars/* "
+	
+	if [[ $2 == s3* ]];then 
+		echo "Copying s3 Jars" 
+		ssh hadoop@$PREFIX$1 "aws s3 cp  --recursive $2 /tmp/jars/"
+	else
+		echo "Copying local jars" 
+		scp  $2 hadoop@$PREFIX$1:/tmp/jars/
+	fi
+
+	echo "Restarting interpreter
+	ssh hadoop@$PREFIX$1 "curl -XPUT http://localhost:8890/api/interpreter/setting/restart/spark &> /tmp/interpreter-restart.out &"
+
+	echo "Checking for spark defaults (following line should have spark.jars set to /tmp/jars)"  
+	ssh hadoop@$PREFIX$1 "grep spark.jars /usr/lib/spark/conf/spark-defaults.conf"
+	#echo "Restarting resourcemanager"
+	#ssh hadoop@$PREFIX$1 "sudo systemctl restart hadoop-yarn-resourcemanager"
+	echo "Running bootstrap" 
+	ssh hadoop@$PREFIX$1 "nohup curl -XPOST http://localhost:8890/api/notebook/job/${BOOTSTRAP} &> /tmp/bootstrap.out &"
+
+fi
+base=0
+while [ $(netstat -anp tcp | grep LISTEN | grep 889${base} |wc -l) -gt 0 ];do
+	base=$((base + 1))	
+done
+
+echo "Other Links
+echo "Hadoop resource manager http://$PREFIX$1:8088"
+echo "Ganglia http://$PREFIX$1/ganglia/
+
+echo "Using port 889${base}" 
+ssh -L 8998:localhost:8998 -L 889${base}:localhost:8890 -L 1808${base}:localhost:18080 -L 1848${base}:localhost:18480 hadoop@$PREFIX$1 

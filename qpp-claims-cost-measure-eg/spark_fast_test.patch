@@ -1,0 +1,95 @@
+Subject: [PATCH] spark fast test
+---
+Index: projects/eg/src/test/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyAdditionalErCostsTest.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/eg/src/test/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyAdditionalErCostsTest.scala b/projects/eg/src/test/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyAdditionalErCostsTest.scala
+--- a/projects/eg/src/test/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyAdditionalErCostsTest.scala	(revision 36f86cdc30e12caadf209e604ec91028c2362684)
++++ b/projects/eg/src/test/scala/gov/cms/qpp/eg/steps/cost_assignment/ApplyAdditionalErCostsTest.scala	(date 1673533432025)
+@@ -3,8 +3,9 @@
+ import gov.cms.qpp.eg.TestWrapper
+ import gov.cms.qpp.eg.models.{Episode, Event}
+ import org.apache.spark.sql.Encoder
++import com.github.mrpowers.spark.fast.tests.DatasetComparer
+ 
+-class ApplyAdditionalErCostsTest extends TestWrapper {
++class ApplyAdditionalErCostsTest extends TestWrapper with DatasetComparer {
+ 
+   test("ApplyAdditionalErCosts") {
+     import spark.implicits._
+@@ -46,18 +47,18 @@
+         .schema(implicitly[Encoder[Episode]].schema)
+         .json(outputPath)
+         .as[Episode]
+-        .collect()
+-        .toSet
++
+     }
+ 
+     val actual =
+       ApplyAdditionalErCosts
+         .apply(inputEvents)(inputEpisodes)
+-        .collect()
+-        .toSet
+ 
+-    assertResult(expected.map(_.serviceRules))(actual.map(_.serviceRules))
+-    assertResult(expected)(actual)
++    //val expectedCollected = expected.collect().toSet
++    //val actualCollected = actual.collect().toSet
++    //assertResult(expectedCollected.map(_.serviceRules))(actualCollected.map(_.serviceRules))
++    //assertResult(expectedCollected)(actualCollected)
++    assertSmallDatasetEquality(expected, actual)
+ 
+   }
+ 
+Index: project/Dependencies.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/project/Dependencies.scala b/project/Dependencies.scala
+--- a/project/Dependencies.scala	(revision 36f86cdc30e12caadf209e604ec91028c2362684)
++++ b/project/Dependencies.scala	(date 1673532524759)
+@@ -10,6 +10,7 @@
+     scalaLogging,
+     scalaReflect,
+     scalaTest,
++    scalaFastTest,
+     sparkTestingBase,
+     scopt,
+     typesafe,
+@@ -32,6 +33,7 @@
+     scopt,
+     typesafe,
+     scalaTest,
++    scalaFastTest,
+     sparkTestingBase,
+     scalaReflect,
+     joda,
+@@ -48,6 +50,7 @@
+     sparkCatalyst,
+     scalaReflect,
+     scalaTest,
++    scalaFastTest,
+     sparkTestingBase,
+     logback,
+     scalaLogging,
+@@ -62,6 +65,7 @@
+     scalaLogging,
+     scalaReflect,
+     scalaTest,
++    scalaFastTest,
+     sparkTestingBase,
+     scopt,
+     typesafe,
+@@ -120,6 +124,8 @@
+   val scalaTest = "org.scalatest" %% "scalatest" % "3.0.1" % Test
+   val scalaMock = "org.scalamock" %% "scalamock" % "4.4.0" % Test
+ 
++  val scalaFastTest = "com.github.mrpowers" %% "spark-fast-tests" % "1.1.0" % "test"
++
+   val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonScalaVersion % Test
+ 
+   val sparkUtils = "org.cms" %% "spark-utils" % costMeasuresVersion % "compile->compile;test->test"

@@ -1,0 +1,107 @@
+Subject: [PATCH] bad-test-correction-timeperiods
+---
+Index: projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_flagger/EpisodeFlagger.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_flagger/EpisodeFlagger.scala b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_flagger/EpisodeFlagger.scala
+--- a/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_flagger/EpisodeFlagger.scala	(revision 44323199f35f7ad6c90143290a32d2efcef22911)
++++ b/projects/eg/src/main/scala/gov/cms/qpp/eg/steps/episode_flagger/EpisodeFlagger.scala	(date 1672168448521)
+@@ -91,33 +91,6 @@
+ 
+     val beneMinMaxDate = buildBeneMinMaxDate(episode)
+ 
+-    // If we're just building out columns here we don't need to pass datasets in as this is probably
+-    // expanding the lineage and complicating the DAG
+-    // TODO Move this to template directly where its getting used
+-    val timePeriods: Column = new TimePeriods(
+-      t0Rule = tier0Rules,
+-      episode = episode,
+-      targetEvent = targetEvent,
+-      triggerEvent = triggerEvent,
+-      triggerIpStayEvent = ipStayEvent,
+-      beneMinMaxDate = beneMinMaxDate
+-    ).value
+-
+-    // TODO Move this to template directly where its getting used
+-    val customCodes: Column = new CustomCodes(
+-      episode = episode,
+-      targetEvent = targetEvent,
+-      triggerEvent = triggerEvent,
+-      triggerIpStayEvent = ipStayEvent,
+-      episodeEsrd = episodeEsrd,
+-      beneEsrdCoverageBeginDate = beneEsrdCoverageBeginDate
+-    ).value
+-
+-    // TODO Move this to template directly where its getting used
+-    val prefixCodes: Column = new PrefixCodes(
+-      targetEvent = targetEvent
+-    ).value
+-
+     val t0RuleFilter: Dataset[Tier0RuleFilter] = new Tier0RuleFilterTable(
+       t0Rule = tier0Rules
+     ).value
+@@ -127,6 +100,9 @@
+     val eligiblePartDEvents = getEligiblePartDEvent(partDEvents, tier0Rules)
+       .transform(toEpisodeFlaggerEvents)
+ 
++    //
++
++
+     val t0Flags: Tier0EpisodeFlagsTable = new Tier0EpisodeFlagsTable(
+       t0Rule = tier0Rules,
+       episode = episode,
+@@ -141,12 +117,14 @@
+       partDEvents = eligiblePartDEvents
+     )
+ 
++    // Using only distinct flags
+     val distinctFlags = t0Flags.value
+       .withColumn("flags", array_distinct($"flags"))
+       .as[Tier0EpisodeFlags]
++
+     val episodeFlags: Dataset[EpisodeFlags] = new EpisodeFlagsTable(
+       t1Rule = tier1Rules,
+-      t0Flags = t0Flags.value
++      t0Flags = distinctFlags
+     ).value
+ 
+     val episodeWithFlags = new EpisodeWithFlagsTable(
+@@ -154,7 +132,7 @@
+       episodeFlags = episodeFlags
+     )
+ 
+-    (episodeWithFlags.value, t0Flags.value)
++    (episodeWithFlags.value, distinctFlags)
+   }
+ 
+   // Get beneStart/EndDate of chronic EG used for TimePeriod
+Index: projects/eg/src/test/scala/gov/cms/qpp/eg/steps/episode_flagger/Tier0EpisodeFlagsTableTest.scala
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/projects/eg/src/test/scala/gov/cms/qpp/eg/steps/episode_flagger/Tier0EpisodeFlagsTableTest.scala b/projects/eg/src/test/scala/gov/cms/qpp/eg/steps/episode_flagger/Tier0EpisodeFlagsTableTest.scala
+--- a/projects/eg/src/test/scala/gov/cms/qpp/eg/steps/episode_flagger/Tier0EpisodeFlagsTableTest.scala	(revision 44323199f35f7ad6c90143290a32d2efcef22911)
++++ b/projects/eg/src/test/scala/gov/cms/qpp/eg/steps/episode_flagger/Tier0EpisodeFlagsTableTest.scala	(date 1672168852659)
+@@ -45,8 +45,9 @@
+           episodeGroupId = "A0001",
+           option = "flagOption",
+           designation = "flagDesignation",
+-          timePeriod = "timePeriodX",
++          timePeriod = "pre_ip_start_dt",
+           claimTypes = Set(EventType.IP_STAY),
++          codes = Set(Code("T", "V")),
+           days = Some(1)
+         )
+       ),
+@@ -76,7 +77,7 @@
+       t0RuleFilter = List(
+         Tier0RuleFilter(
+           episodeGroupId = "A0001",
+-          filterTimePeriods = Set("timePeriodX_1"),
++          filterTimePeriods = Set("pre_ip_start_dt"),
+           filterEventTypes = Set(EventType.IP_STAY),
+           filterCodes = Set(Code("T", "V"))
+         )
