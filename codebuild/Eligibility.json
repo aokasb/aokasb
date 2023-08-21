@@ -1,0 +1,27 @@
+[
+  {
+    "name": "JIRA_TICKET",
+    "value": "QPPSE-894",
+    "type": "PLAINTEXT"
+  },
+  {
+    "name": "FINAL_SCORING_VERSION",
+    "value": "2022.9.5-RS-SNAPSHOT",
+    "type": "PLAINTEXT"
+  },
+  {
+    "name": "NOTES",
+    "value": "QPPSE-389",
+    "type": "PLAINTEXT"
+  },
+  {
+    "name": "ELIGIBILITY",
+    "value": "true",
+    "type": "PLAINTEXT"
+  },
+  {
+    "name": "FS_RUN_TYPE",
+    "value": "rs",
+    "type": "PLAINTEXT"
+  }
+]
