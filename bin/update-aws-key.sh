@@ -1,5 +1,5 @@
 # Get key from https://cloudtamer.cms.gov/portal/app-api-key
-#!/bin/zsh
+#!/bin/bash
 ACCNAME=${1:-scimpl}
 case $ACCNAME in 
 	scimpl)
