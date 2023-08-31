@@ -7,6 +7,8 @@ SOURCEVERSION=develop
 OVERRIDEDICT='{}'
 REFERENCE="NONE"
 PROJECT="project"
+USER=$AWS_PROFILE
+REGION=${AWS_DEFAULT_REGION:-"us-east-1"}
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -35,6 +37,16 @@ while [[ $# -gt 0 ]]; do
       shift
       shift
       ;;
+    -u|--user)
+      USER="$2"
+      shift
+      shift
+      ;;
+    -g|--geo)
+      REGION="$2"
+      shift
+      shift
+      ;;
     *)
       echo "Unknown option $1"
       echo "Usage: bash codebuild.sh
@@ -42,8 +54,9 @@ while [[ $# -gt 0 ]]; do
         -o '{\"<override_key\":\"override_value\"}'
         -p <codebuild-project> Default: manualruns
         -s <source-version> Default: develop
+        -u <AWS Profile> Defaults to \$AWS_PROFILE
+        -g <Region Geography> Defaults to \$AWS_DEFAULT_REGION or us-east-1
         Dependency: jsonOverride.py
-        Dependency: Needs $AWS_PROFILE to be set
         - Executes standard build when no configuration is specified
         - only existing parameters can be overriden new parameters cannot be added
         "
@@ -69,17 +82,19 @@ fi
 
 command="aws codebuild start-build \
 --project-name $PROJECT \
---profile $AWS_PROFILE \
+--profile $USER \
 --environment-variables-override file://./tmp.json \
 --source-version $SOURCEVERSION \
---region us-east-1"
+--region $REGION"
 
-echo $command
+echo "Running $command"
 $command 1> codebuild.out 2> codebuild.log
 RESULT=$?
 if [ $RESULT -eq 0 ];then
-        echo "command SUCCEEDED, codebuild out and log are created"
+        echo "SUCCEEDED"
+        echo "Logs in codebuild.log and codebuild.out"
 else
-        echo "command FAILED see output and logs"
-
+        echo "FAILED"
+        echo "Logs in codebuild.log and codebuild.out"
+        exit 1
 fi
