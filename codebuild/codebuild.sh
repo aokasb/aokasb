@@ -68,7 +68,7 @@ done
 
 if [ "$REFERENCE" != "NONE" ];then
         echo "Downloading environment variables for reference"
-        aws codebuild batch-get-builds --ids $PROJECT:$REFERENCE --output json | jq '.builds[].environment.environmentVariables' > ref.json
+        aws codebuild batch-get-builds --ids $PROJECT:$REFERENCE --output json --region $REGION | jq '.builds[].environment.environmentVariables' > ref.json
         CONFIGJSON="ref.json"
 fi
 
