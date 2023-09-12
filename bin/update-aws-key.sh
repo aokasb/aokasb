@@ -20,7 +20,8 @@ if [ $? -eq 0 ]; then
 else 
 	echo "New Cloudtamer API Key required"
 	python -mwebbrowser https://cloudtamer.cms.gov/portal/app-api-key
-	read -p "API Key:" apikey
+	echo "Copy API Key here:"
+	read apikey
 	echo $apikey > ~/.cloudtamer/apikey
 	./ctkey-osx savecreds --url=https://cloudtamer.cms.gov --app-api-key=$apikey --account=${ACC} --iam-role=$ROLE
 fi
