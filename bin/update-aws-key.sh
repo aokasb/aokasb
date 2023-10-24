@@ -1,6 +1,6 @@
-# Get key from https://cloudtamer.cms.gov/portal/app-api-key
 #!/bin/bash
-# NEEDS ~/ctkey to have ctkey-osx executable
+# Get key from https://cloudtamer.cms.gov/portal/app-api-key
+# NEEDS ~/ctkey to have ctkey-osx executable https://confluence.cms.gov/download/attachments/382210110/ctkey.zip?api=v2
 # NEEDS ~/.cloudtamer/config to have account and role associated
 # Populates ~/.cloudtamer/apikey if not present
 # USE source to execute this file so that your environment will get the right role etc
