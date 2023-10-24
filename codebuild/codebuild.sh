@@ -93,6 +93,9 @@ RESULT=$?
 if [ $RESULT -eq 0 ];then
         echo "SUCCEEDED"
         echo "Logs in codebuild.log and codebuild.out"
+	buildid=$(cat codebuild.out | jq '.build.id')
+	echo "Run following for status =>"
+	echo "aws codebuild batch-get-builds --ids ${buildid}  --region $REGION | jq '.builds[0].buildStatus'"
 else
         echo "FAILED"
         echo "Logs in codebuild.log and codebuild.out"
