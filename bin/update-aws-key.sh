@@ -17,13 +17,19 @@ if [ "$ACC" = "" ];then
   echo "it should be of the format \n[account_abbreviation]\naccount=<account_number>\nrole=<role>"
   return 1
 fi
+export AWS_PROFILE="${ACC}_${ROLE}"
 apikey=$(cat ~/.cloudtamer/apikey)
 function ctkey() {
-   ~/ctkey/ctkey-osx savecreds --url=https://cloudtamer.cms.gov --app-api-key=$1 --account=${ACC} --iam-role=${ROLE}
+	aws sts get-caller-identity --profile $AWS_PROFILE &> /dev/null 
+	if [ $? -eq 0 ]; then
+        	echo "existing AWS Credentials work!"
+	else 
+    		~/ctkey/ctkey-osx savecreds --url=https://cloudtamer.cms.gov --app-api-key=$1 --account=${ACC} --iam-role=${ROLE}
+	fi
 }
 ctkey $apikey
 if [ $? -eq 0 ]; then
-	echo "existing Cloudtamer API key works"
+	echo "existing Cloudtamer API key works!"
 else 
 	echo "New Cloudtamer API Key required"
 	python -mwebbrowser https://cloudtamer.cms.gov/portal/app-api-key
@@ -32,4 +38,3 @@ else
 	echo $apikey > ~/.cloudtamer/apikey
   ctkey $apikey
 fi
-export AWS_PROFILE="${ACC}_${ROLE}"
