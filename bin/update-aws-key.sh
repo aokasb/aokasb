@@ -10,20 +10,22 @@ parser="import configparser,sys;config = configparser.ConfigParser();config.read
 read -r ACC ROLE <<< $(python -c "$parser" ~/.cloudtamer/config $ACCNAME)
 if [ "$ACC" = "" ];then
   echo "Bad account name check or create the ~/.cloudtamer/config for entries of account and role"
-  exit 1
+  echo "it should be of the format \n[account_abbreviation]\naccount=<account_number>\nrole=<role>"
+  return 1
 fi
-pushd ~/ctkey
-apikey=$(cat ~/.cloudtamer/apikey) 
-./ctkey-osx savecreds --url=https://cloudtamer.cms.gov --app-api-key=$apikey --account=${ACC} --iam-role=$ROLE
+apikey=$(cat ~/.cloudtamer/apikey)
+function ctkey() {
+   ~/ctkey/ctkey-osx savecreds --url=https://cloudtamer.cms.gov --app-api-key=$1 --account=${ACC} --iam-role=${ROLE}
+}
+ctkey $apikey
 if [ $? -eq 0 ]; then
-	echo "existing key works"
+	echo "existing Cloudtamer API key works"
 else 
 	echo "New Cloudtamer API Key required"
 	python -mwebbrowser https://cloudtamer.cms.gov/portal/app-api-key
 	echo "Copy API Key here:"
 	read apikey
 	echo $apikey > ~/.cloudtamer/apikey
-	./ctkey-osx savecreds --url=https://cloudtamer.cms.gov --app-api-key=$apikey --account=${ACC} --iam-role=$ROLE
+  ctkey $apikey
 fi
-popd
 export AWS_PROFILE="${ACC}_${ROLE}"
