@@ -74,7 +74,8 @@ fi
 
 if [ "$CONFIGJSON" != "" ];then
         echo "applying override - result in tmp.json)"
-        python jsonOverride.py $CONFIGJSON $OVERRIDEDICT 1> tmp.json
+        SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+        python $SCRIPT_DIR/jsonOverride.py $CONFIGJSON $OVERRIDEDICT 1> tmp.json
 else
         echo "No config provided only triggering the run"
         echo '[]' > tmp.json
