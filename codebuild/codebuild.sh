@@ -1,6 +1,7 @@
 #!/bin/bash
 # Objectives: Duplicate the AWS Codebuild / start codebuild from template with change in Environment variable
 
+
 # Default values
 CONFIGJSON=""
 SOURCEVERSION=develop
@@ -9,7 +10,7 @@ REFERENCE="NONE"
 PROJECT="project"
 USER=$AWS_PROFILE
 REGION=${AWS_DEFAULT_REGION:-"us-east-1"}
-
+WATCH=0
 while [[ $# -gt 0 ]]; do
   case $1 in
     -c|--config)
@@ -45,6 +46,10 @@ while [[ $# -gt 0 ]]; do
     -g|--geo)
       REGION="$2"
       shift
+      shift
+      ;;
+     -w|--watch)
+      WATCH=1
       shift
       ;;
     *)
@@ -91,12 +96,36 @@ command="aws codebuild start-build \
 echo "Running $command"
 $command 1> codebuild.out 2> codebuild.log
 RESULT=$?
+
+buildid=$(cat codebuild.out | jq '.build.id')
+echo $buildid
+buildStatus="aws codebuild batch-get-builds --ids ${buildid}  --region $REGION | jq -r '.builds[0].buildStatus' "
+function checkStatus(){
+while true;do
+	output=$(eval $buildStatus)
+	if [[ "$output" == "FAILED" ]];then
+		echo $output
+		return 1
+	fi
+	if [[ "$output" == "SUCCEEDED" ]];then
+  		echo $output
+  		return 0
+  fi
+  echo -n "."
+	sleep 20
+done
+}
 if [ $RESULT -eq 0 ];then
-        echo "SUCCEEDED"
-        echo "Logs in codebuild.log and codebuild.out"
-	buildid=$(cat codebuild.out | jq '.build.id')
-	echo "Run following for status =>"
-	echo "aws codebuild batch-get-builds --ids ${buildid}  --region $REGION | jq '.builds[0].buildStatus'"
+    echo "Codebuild command SUCCEEDED"
+    echo "Logs in codebuild.log and codebuild.out"
+    if [ $WATCH -eq 1 ]; then
+            echo "Checking status of the CodeBuild job"
+            checkStatus
+    else
+      echo "Run following command for status:"
+      echo "$buildStatus"
+    fi
+	
 else
         echo "FAILED"
         echo "Logs in codebuild.log and codebuild.out"

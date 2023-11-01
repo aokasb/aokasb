@@ -18,16 +18,14 @@ if [ "$ACC" = "" ];then
   return 1
 fi
 export AWS_PROFILE="${ACC}_${ROLE}"
-apikey=$(cat ~/.cloudtamer/apikey)
-function ctkey() {
-	aws sts get-caller-identity --profile $AWS_PROFILE &> /dev/null 
-	if [ $? -eq 0 ]; then
+aws sts get-caller-identity --profile $AWS_PROFILE &> /dev/null
+if [ $? -eq 0 ]; then
         	echo "existing AWS Credentials work!"
-	else 
-    		~/ctkey/ctkey-osx savecreds --url=https://cloudtamer.cms.gov --app-api-key=$1 --account=${ACC} --iam-role=${ROLE}
-	fi
-}
-ctkey $apikey
+        	return 0
+fi
+apikey=$(cat ~/.cloudtamer/apikey)
+# checking if the api key works
+~/ctkey/ctkey-osx view --url=https://cloudtamer.cms.gov --app-api-key=$apikey --account=${ACC} --iam-role=${ROLE} &> /dev/null
 if [ $? -eq 0 ]; then
 	echo "existing Cloudtamer API key works!"
 else 
@@ -36,5 +34,6 @@ else
 	echo "Copy API Key here:"
 	read apikey
 	echo $apikey > ~/.cloudtamer/apikey
-  ctkey $apikey
+  apikey=$(cat ~/.cloudtamer/apikey)
 fi
+~/ctkey/ctkey-osx savecreds --url=https://cloudtamer.cms.gov --app-api-key=$apikey --account=${ACC} --iam-role=${ROLE}

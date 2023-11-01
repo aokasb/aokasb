@@ -10,7 +10,7 @@ for i in range(len(data)):
         if data[i].get("name")==j:
             r=override[j]
             o=data[i]["value"]
-            eprint("Found",o," and value ",j," being replaced to ",r)
+            eprint("Found",j," and value ",o," being replaced to ",r)
             data[i]["value"]=override[j]
             break
 print(json.dumps(data,indent=2, sort_keys=False, ensure_ascii=False))
