@@ -1,6 +1,6 @@
 #!/bin/bash
 # Objectives: Duplicate the AWS Codebuild / start codebuild from template with change in Environment variable
-
+set -e
 
 # Default values
 CONFIGJSON=""
@@ -56,7 +56,7 @@ while [[ $# -gt 0 ]]; do
       echo "Unknown option $1"
       echo "Usage: bash codebuild.sh
         -c <environment-variables-json> OR -r <reference-project-run-hash>
-        -o '{\"<override_key\":\"override_value\"}'
+        -o '{\"<override_key\":\"override_value\"}' (NO SPACES!)
         -p <codebuild-project> Default: manualruns
         -s <source-version> Default: develop
         -u <AWS Profile> Defaults to \$AWS_PROFILE
