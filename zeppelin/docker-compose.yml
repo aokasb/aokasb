@@ -1,0 +1,18 @@
+services:
+  zeppelin:
+    image: apache/zeppelin:0.10.1
+    ports:
+      - "8080:8080"
+    volumes:
+      - "~/zeppelin/data:/zeppelin/data"
+      - "~/zeppelin/logs:/zeppelin/logs"
+      - "~/zeppelin/notebooks:/zeppelin/notebooks"
+      - "~/zeppelin/jars:/tmp/jars"
+      - "~/opt/spark-3.2.2-bin-hadoop2.7/:/opt/spark"
+
+    environment:
+      SPARK_CONF_DIR: /opt/spark/conf
+      SPARK_HOME: /opt/spark
+      SPARK_SUBMIT_OPTIONS: '--jars /tmp/jars/*'
+      ZEPPELIN_LOG_DIR: /zeppelin/logs
+      ZEPPELIN_NOTEBOOK_DIR: /zeppelin/notebooks

@@ -1,0 +1,22 @@
+#!/bin/bash
+set -x
+set -e
+
+# Assign a directory as zeppelin directory
+ZEPDIR=~/zeppelin
+# mkdir -p $ZEPDIR/data $ZEPDIR/jars $ZEPDIR/logs $ZEPDIR/notebooks
+# Download this spark version https://spark.apache.org/downloads.html
+SPARKDIR=~/opt/spark-3.2.2-bin-hadoop2.7/
+if [ "$#" -eq 1 ];then  
+	rm -f $ZEPDIR/jars/*
+	cp $1/*.jar $ZEPDIR/jars/
+fi
+docker run -p 8080:8080 --rm \
+	-v $ZEPDIR/data:/zeppelin/data \
+	-v $ZEPDIR/logs:/zeppelin/logs   -e ZEPPELIN_LOG_DIR='/zeppelin/logs' \
+	-v $ZEPDIR/notebooks:/zeppelin/notebooks -e ZEPPELIN_NOTEBOOK_DIR='/zeppelin/notebooks' \
+	-v $ZEPDIR/jars:/tmp/jars -e SPARK_SUBMIT_OPTIONS="--jars /tmp/jars/*" \
+	-e ZEPPELIN_INTP_MEM="-Xmx4g" \
+	-v $SPARKDIR:/opt/spark -e SPARK_HOME=/opt/spark \
+	-e SPARK_CONF_DIR=/opt/spark/conf \
+	--name zeppelin apache/zeppelin:0.10.1
